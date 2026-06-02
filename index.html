@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境跳转与授权测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h2, h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .env-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .env-option:hover {
+            background-color: #f9f9f9;
+            border-color: #d0d0d0;
+        }
+
+        .env-option.active {
+            border-color: #4285f4;
+            background-color: #e8f0fe;
+        }
+
+        .env-option input[type="radio"] {
+            margin-right: 15px;
+        }
+
+        .env-details {
+            flex: 1;
+        }
+
+        .env-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .env-urls {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .input-row .input-group {
+            flex: 1;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #3367d6;
+        }
+
+        #tokenDisplay {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            word-break: break-all;
+            font-family: monospace;
+            display: none;
+        }
+        
+        #tokenDisplay.has-token {
+            display: block;
+            border-color: #c3e6cb;
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .config-block {
+            background-color: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="section">
+            <h2>环境配置</h2>
+            <div id="envList">
+                <!-- 环境选项将由 JS 生成 -->
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>地址参数配置</h3>
+            <div class="config-block">
+                <div class="input-group">
+                    <label>页面基础地址 (Page Base URL)</label>
+                    <input type="text" id="pageBaseUrl" readonly>
+                </div>
+                <div class="input-group">
+                    <label>接口基础地址 (API Base URL)</label>
+                    <input type="text" id="apiBaseUrl" readonly>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>机构ID (Organization ID)</label>
+                        <input type="text" id="orgId" value="test" placeholder="test">
+                    </div>
+                    <div class="input-group">
+                        <label>课程ID (Course ID)</label>
+                        <input type="text" id="courseId" value="test" placeholder="test">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <button id="openAuthWindow">打开授权窗口</button>
+            <div id="tokenDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        // 环境配置定义
+        const environments = [
+            {
+                id: 'local',
+                name: '本地环境 (Local)',
+                pageUrl: 'http://localhost:5173',
+                apiUrl: 'https://gateway.example.com'
+            },
+            {
+                id: 'dev',
+                name: '开发环境 (Dev)',
+                pageUrl: 'https://course.example.com',
+                apiUrl: 'https://gateway.example.com'
+            },
+            {
+                id: 'test',
+                name: '测试环境 (Test)',
+                pageUrl: 'https://course-test.example.com',
+                apiUrl: 'https://gateway-test.example.com'
+            },
+            {
+                id: 'prod',
+                name: '生产环境 (Prod)',
+                pageUrl: 'https://course.example.com',
+                apiUrl: 'https://gateway.example.com'
+            },
+            {
+                id: 'custom',
+                name: '自定义 (Custom)',
+                pageUrl: '',
+                apiUrl: ''
+            }
+        ];
+
+        const envListEl = document.getElementById('envList');
+        const pageBaseUrlInput = document.getElementById('pageBaseUrl');
+        const apiBaseUrlInput = document.getElementById('apiBaseUrl');
+        const orgIdInput = document.getElementById('orgId');
+        const courseIdInput = document.getElementById('courseId');
+        const tokenDisplay = document.getElementById('tokenDisplay');
+
+        let currentEnvId = 'local';
+
+        // 初始化界面
+        function initUI() {
+            environments.forEach(env => {
+                const div = document.createElement('div');
+                div.className = `env-option ${env.id === currentEnvId ? 'active' : ''}`;
+                div.onclick = () => selectEnv(env.id);
+                
+                div.innerHTML = `
+                    <input type="radio" name="env" value="${env.id}" ${env.id === currentEnvId ? 'checked' : ''}>
+                    <div class="env-details">
+                        <div class="env-name">${env.name}</div>
+                        ${env.id !== 'custom' ? `
+                        <div class="env-urls">Page: ${env.pageUrl}</div>
+                        <div class="env-urls">API: ${env.apiUrl}</div>
+                        ` : '<div class="env-urls">手动输入地址</div>'}
+                    </div>
+                `;
+                envListEl.appendChild(div);
+            });
+            selectEnv(currentEnvId);
+        }
+
+        // 切换环境
+        function selectEnv(id) {
+            currentEnvId = id;
+            
+            // 更新样式
+            document.querySelectorAll('.env-option').forEach(el => {
+                const radio = el.querySelector('input[type="radio"]');
+                if (radio.value === id) {
+                    el.classList.add('active');
+                    radio.checked = true;
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            // 更新输入框
+            const env = environments.find(e => e.id === id);
+            if (id === 'custom') {
+                pageBaseUrlInput.removeAttribute('readonly');
+                apiBaseUrlInput.removeAttribute('readonly');
+                pageBaseUrlInput.placeholder = '请输入页面地址 (http://...)';
+                apiBaseUrlInput.placeholder = '请输入接口地址 (http://...)';
+            } else {
+                pageBaseUrlInput.setAttribute('readonly', 'readonly');
+                apiBaseUrlInput.setAttribute('readonly', 'readonly');
+                pageBaseUrlInput.value = env.pageUrl;
+                apiBaseUrlInput.value = env.apiUrl;
+            }
+        }
+
+        // 监听 postMessage
+        window.addEventListener('message', async (e) => {
+            if (e.data.event === 'auth') {
+                const apiUrl = apiBaseUrlInput.value.trim();
+                
+                if (!apiUrl) {
+                    alert('API地址为空，无法获取Token');
+                    return;
+                }
+
+                try {
+                    console.log(`正在请求Token: ${apiUrl}/api/v2/auth/token`);
+                    
+                    const response = await fetch(`${apiUrl}/api/v2/auth/token`, {
+                        method: 'POST',
+                        headers: {
+                            'User-Agent': 'Apifox/1.0.0 (https://apifox.com)',
+                            'Content-Type': 'application/json',
+                            'Accept': '*/*',
+                            // 'Host': new URL(apiUrl).host, // 浏览器会自动设置 Host，手动设置可能报错
+                        },
+                        body: JSON.stringify({
+                            id: 'R6oBlxZ_iOEI6RJ0UefGHPOHvCWoWtL0D8DaxYb4SQI',
+                            secret: 'szmYF6FrAc-1c2ONbzZAUCoAhRc8V_iq5Se2cGv6jvYjHfk_U-jxnWoi08VOwez0Nw8FQ9pcY1RiVwRvuhjZ4Q'
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Token 获取失败，状态码：${response.status}`);
+                    }
+
+                    const tokenData = await response.json();
+                    const accessToken = tokenData?.data?.access_token || tokenData?.data?.accessToken;
+
+                    console.log(`accessToken =`, accessToken);
+                    
+                    // 显示Token
+                    if (accessToken) {
+                        tokenDisplay.textContent = `Access Token: ${accessToken}`;
+                        tokenDisplay.classList.add('has-token');
+                        
+                        // 回传Token给子窗口
+                        if (e.source) {
+                            e.source.postMessage({
+                                event: 'accessTokenAuth',
+                                data: {
+                                    accessToken: accessToken
+                                }
+                            }, '*');
+                        }
+                    } else {
+                        tokenDisplay.textContent = '未获取到 Access Token';
+                        tokenDisplay.classList.remove('has-token');
+                    }
+
+                } catch (error) {
+                    console.error('获取 access token 失败：', error);
+                    tokenDisplay.textContent = `Error: ${error.message}`;
+                    tokenDisplay.classList.remove('has-token');
+                    tokenDisplay.style.display = 'block';
+                    tokenDisplay.style.color = 'red';
+                    tokenDisplay.style.backgroundColor = '#ffebee';
+                    tokenDisplay.style.borderColor = '#ffcdd2';
+                }
+            }
+        }, false);
+
+        // 绑定按钮事件
+        document.getElementById('openAuthWindow').addEventListener('click', () => {
+            const pageBaseUrl = pageBaseUrlInput.value.trim();
+            const orgId = orgIdInput.value.trim() || 'test';
+            const courseId = courseIdInput.value.trim() || 'test';
+
+            if (!pageBaseUrl) {
+                alert('请输入页面基础地址');
+                return;
+            }
+
+            // 去除末尾斜杠
+            const cleanBaseUrl = pageBaseUrl.replace(/\/+$/, '');
+            const targetUrl = `${cleanBaseUrl}/${orgId}/${courseId}`;
+
+            console.log('Opening URL:', targetUrl);
+            window.open(targetUrl);
+        });
+
+        // 启动
+        initUI();
+    </script>
+</body>
+
+</html>

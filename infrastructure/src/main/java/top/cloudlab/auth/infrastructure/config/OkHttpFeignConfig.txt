@@ -1,0 +1,38 @@
+package top.cloudlab.auth.infrastructure.common.config.httpclient;
+
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import feign.okhttp.OkHttpClient;
+import okhttp3.ConnectionPool;
+
+@Configuration
+public class OkHttpFeignConfig {
+
+    @Bean
+    public ConnectionPool okHttpConnectionPool() {
+        return new ConnectionPool(100, 5, TimeUnit.MINUTES);
+    }
+
+    @Bean
+    public okhttp3.OkHttpClient okHttpClient(ConnectionPool connectionPool) {
+        return new okhttp3.OkHttpClient.Builder()
+                // 绑定自定义连接池（核心，实现连接复用）
+                .connectionPool(connectionPool)
+                // 1. 连接超时：建立TCP连接的超时时间，连接不上服务端则抛异常
+                .connectTimeout(5, TimeUnit.SECONDS)
+                // 2. 读超时：连接成功后，从服务端读取响应数据的超时时间
+                .readTimeout(30, TimeUnit.SECONDS)
+                // 3. 写超时：连接成功后，向服务端写入请求数据的超时时间
+                .writeTimeout(30, TimeUnit.SECONDS)
+                // 4. 是否自动重试（非幂等接口建议关闭，比如POST提交表单）
+                .retryOnConnectionFailure(false)
+                .build();
+    }
+
+    @Bean
+    public feign.Client feignClient(okhttp3.OkHttpClient okHttpClient) {
+        return new OkHttpClient(okHttpClient);
+    }
+}
