@@ -6,7 +6,7 @@
 | 决策日期 | 2026-05-25（tag `v26052501`） |
 | 复发日期 | 2026-06-02（被改回 `addCookie()` 又触发 400，再次还原） |
 | 影响范围 | `SSOController#login` 及所有跨 `*.example.com` 子域 cookie 下发场景 |
-| 决策人 | 云燕平台开发组 |
+| 决策人 | ArchAIHarness Maintainers |
 
 ---
 
@@ -62,14 +62,14 @@ response.addCookie(cookie);
 | 跨子域共享 | ✅ 浏览器按 cookie domain 自动覆盖 | ✅ 同 |
 | 调试可见 | ✅ HTML 源码可见 | ✅ Set-Cookie 头可见 |
 
-权衡：**牺牲 HttpOnly 换取跨子域兼容性**。因为业务方前端 JS 需主动读 cookie（如读 `userId`、`partner`、`sign` 用于 API 调用签名），无论如何 HttpOnly 都用不了。
+权衡：**牺牲 HttpOnly 换取跨子域兼容性**。因为接入方前端 JS 需主动读 cookie（如读 `userId`、`partner`、`sign` 用于 API 调用签名），无论如何 HttpOnly 都用不了。
 
 ## 后果
 
 - ✅ `*.example.com` 所有子域可读到登录 Cookie
 - ✅ 通过 RFC6265 校验
-- ⚠️ Cookie 非 HttpOnly，可被页面 JS 读取（业务必需）
-- ⚠️ 用户禁用 JavaScript 时 SSO 不可用（业务可接受）
+- ⚠️ Cookie 非 HttpOnly，可被页面 JS 读取（接入方约束）
+- ⚠️ 用户禁用 JavaScript 时 SSO 不可用（接入方约束）
 
 ## 红线规则（违反 = P0）
 

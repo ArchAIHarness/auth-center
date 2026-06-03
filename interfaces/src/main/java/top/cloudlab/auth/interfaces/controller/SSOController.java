@@ -31,7 +31,7 @@ import top.cloudlab.auth.application.service.SSOAppService;
  * 而 {@code .example.com}（前导点）会被直接拒绝并返回
  * <pre>{"code":400,"message":"An invalid domain [.example.com] was specified for this cookie"}</pre>
  *
- * <p>但前端跨多个 {@code *.example.com} 子域必须共享 cookie，且业务 JS 需主动读取
+ * <p>但前端跨多个 {@code *.example.com} 子域必须共享 cookie，且接入方 JS 需主动读取
  * （HttpOnly 用不了），因此唯一可行方案是 JS {@code document.cookie}。
  *
  * <p>历史上至少 2 次有人改回 {@code addCookie()} 导致线上 SSO 全部 400。

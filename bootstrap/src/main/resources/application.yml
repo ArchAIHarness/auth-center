@@ -102,4 +102,4 @@ user-service:
   url: ${USER_SERVICE_URL:http://user:80}
 
 lab-service:
-  url: ${LAB_SERVICE_URL:https://lab.example.com}
+  url: ${LAB_SERVICE_URL:https://identity.example.com}
